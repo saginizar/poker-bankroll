@@ -7,34 +7,32 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#0d1117">
   <title>♠ Poker Bankroll</title>
-  <link rel="stylesheet" href="/css/style.css">
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-  <div id="app">
-    <!-- Views injected by JS -->
-  </div>
+  <div id="app"></div>
 
   <!-- Player Action Overlay -->
-  <div id="overlay" class="overlay hidden">
+  <div id="overlay" class="overlay hidden" onclick="if(event.target===this)closeOverlay()">
     <div class="overlay-card">
       <div class="overlay-header">
         <span id="overlay-player-name"></span>
-        <button class="btn-icon" onclick="closeOverlay()">✕</button>
+        <button class="btn-icon" onclick="closeOverlay()">&#x2715;</button>
       </div>
       <div class="overlay-tabs">
         <button class="tab-btn active" data-tab="buyin" onclick="switchTab('buyin')">Buy-In</button>
         <button class="tab-btn" data-tab="credit" onclick="switchTab('credit')">Credit/Adjust</button>
       </div>
-
-      <!-- Tab: Buy-In -->
       <div id="tab-buyin" class="tab-content">
         <div class="quick-btns">
-          <button class="quick-btn" onclick="addBuyin(100)">+₪100</button>
-          <button class="quick-btn" onclick="addBuyin(200)">+₪200</button>
-          <button class="quick-btn" onclick="addBuyin(300)">+₪300</button>
+          <button class="quick-btn" onclick="addBuyin(100)">+&#8362;100</button>
+          <button class="quick-btn" onclick="addBuyin(200)">+&#8362;200</button>
+          <button class="quick-btn" onclick="addBuyin(300)">+&#8362;300</button>
         </div>
         <div class="input-row">
-          <input id="buyin-amount" type="number" min="1" step="1" placeholder="Custom amount" class="input-field">
+          <input id="buyin-amount" type="number" min="1" step="1" placeholder="Custom amount"
+            class="input-field" inputmode="numeric">
         </div>
         <label class="checkbox-label">
           <input type="checkbox" id="buyin-is-debt">
@@ -42,11 +40,10 @@
         </label>
         <button class="btn-primary full-width" onclick="submitBuyin()">Confirm Buy-In</button>
       </div>
-
-      <!-- Tab: Credit/Adjust -->
       <div id="tab-credit" class="tab-content hidden">
         <div class="input-row">
-          <input id="credit-amount" type="number" step="1" placeholder="Amount (negative to deduct)" class="input-field">
+          <input id="credit-amount" type="number" step="1" placeholder="Amount (negative to deduct)"
+            class="input-field" inputmode="numeric">
         </div>
         <div class="input-row">
           <textarea id="credit-notes" placeholder="Reason (required)" class="input-field" rows="2"></textarea>
@@ -57,17 +54,17 @@
   </div>
 
   <!-- Confirm dialog -->
-  <div id="confirm-dialog" class="overlay hidden">
+  <div id="confirm-dialog" class="overlay hidden" onclick="if(event.target===this)closeConfirm()">
     <div class="overlay-card">
       <p id="confirm-msg" class="confirm-msg"></p>
       <div class="row gap-sm">
-        <button class="btn-danger full-width" id="confirm-yes">Yes</button>
+        <button class="btn-danger full-width" id="confirm-yes">Yes, delete</button>
         <button class="btn-secondary full-width" onclick="closeConfirm()">Cancel</button>
       </div>
     </div>
   </div>
 
-  <script src="/js/api.js"></script>
-  <script src="/js/app.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/app.js"></script>
 </body>
 </html>
