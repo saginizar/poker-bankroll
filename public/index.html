@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#0d1117">
+  <title>♠ Poker Bankroll</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div id="app">
+    <!-- Views injected by JS -->
+  </div>
+
+  <!-- Player Action Overlay -->
+  <div id="overlay" class="overlay hidden">
+    <div class="overlay-card">
+      <div class="overlay-header">
+        <span id="overlay-player-name"></span>
+        <button class="btn-icon" onclick="closeOverlay()">✕</button>
+      </div>
+      <div class="overlay-tabs">
+        <button class="tab-btn active" data-tab="buyin" onclick="switchTab('buyin')">Buy-In</button>
+        <button class="tab-btn" data-tab="credit" onclick="switchTab('credit')">Credit/Adjust</button>
+      </div>
+
+      <!-- Tab: Buy-In -->
+      <div id="tab-buyin" class="tab-content">
+        <div class="quick-btns">
+          <button class="quick-btn" onclick="addBuyin(100)">+₪100</button>
+          <button class="quick-btn" onclick="addBuyin(200)">+₪200</button>
+          <button class="quick-btn" onclick="addBuyin(300)">+₪300</button>
+        </div>
+        <div class="input-row">
+          <input id="buyin-amount" type="number" min="1" step="1" placeholder="Custom amount" class="input-field">
+        </div>
+        <label class="checkbox-label">
+          <input type="checkbox" id="buyin-is-debt">
+          <span>Mark as Debt</span>
+        </label>
+        <button class="btn-primary full-width" onclick="submitBuyin()">Confirm Buy-In</button>
+      </div>
+
+      <!-- Tab: Credit/Adjust -->
+      <div id="tab-credit" class="tab-content hidden">
+        <div class="input-row">
+          <input id="credit-amount" type="number" step="1" placeholder="Amount (negative to deduct)" class="input-field">
+        </div>
+        <div class="input-row">
+          <textarea id="credit-notes" placeholder="Reason (required)" class="input-field" rows="2"></textarea>
+        </div>
+        <button class="btn-primary full-width" onclick="submitCredit()">Apply Adjustment</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Confirm dialog -->
+  <div id="confirm-dialog" class="overlay hidden">
+    <div class="overlay-card">
+      <p id="confirm-msg" class="confirm-msg"></p>
+      <div class="row gap-sm">
+        <button class="btn-danger full-width" id="confirm-yes">Yes</button>
+        <button class="btn-secondary full-width" onclick="closeConfirm()">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/app.js"></script>
+</body>
+</html>
