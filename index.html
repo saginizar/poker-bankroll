@@ -53,6 +53,33 @@
     </div>
   </div>
 
+  <!-- Feedback overlay -->
+  <div id="feedback-overlay" class="overlay hidden" onclick="if(event.target===this)closeFeedback()">
+    <div class="overlay-card feedback-card">
+      <div class="overlay-header">
+        <span>Feedback</span>
+        <button class="btn-icon" onclick="closeFeedback()">&#x2715;</button>
+      </div>
+      <div class="overlay-tabs">
+        <button class="tab-btn active" data-tab="fb-submit" onclick="switchFbTab('fb-submit')">+ Submit</button>
+        <button class="tab-btn" data-tab="fb-inbox" onclick="switchFbTab('fb-inbox')">Inbox <span id="fb-count-badge"></span></button>
+      </div>
+      <div id="tab-fb-submit" class="tab-content">
+        <div class="fb-type-row">
+          <label class="fb-type-opt"><input type="radio" name="fb-type" value="bug" checked> 🐛 Bug</label>
+          <label class="fb-type-opt"><input type="radio" name="fb-type" value="feature"> 💡 Feature</label>
+          <label class="fb-type-opt"><input type="radio" name="fb-type" value="other"> 📝 Other</label>
+        </div>
+        <textarea id="fb-text" class="input-field" rows="4" placeholder="Describe the bug, feature idea, or note…"></textarea>
+        <button class="btn-primary full-width mt-sm" onclick="submitFeedback()">Submit</button>
+      </div>
+      <div id="tab-fb-inbox" class="tab-content hidden">
+        <div id="fb-inbox-list"></div>
+        <button class="btn-secondary full-width mt-sm" id="fb-copy-btn" onclick="copyAllFeedback()">📋 Copy All</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Confirm dialog -->
   <div id="confirm-dialog" class="overlay hidden" onclick="if(event.target===this)closeConfirm()">
     <div class="overlay-card">

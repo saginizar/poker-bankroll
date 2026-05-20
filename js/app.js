@@ -115,8 +115,11 @@ function render() {
 
 function buildTopNav() {
   const isAdmin = state.role === 'admin';
+  const fbCount = isAdmin ? Feedback.all().length : 0;
+  const fbBadge = fbCount > 0 ? `<span class="topnav-fb-badge">${fbCount}</span>` : '';
   return `<div class="topnav">
     <span class="topnav-title">♠ Poker Bankroll ${isAdmin ? '<span class="admin-badge">ADMIN</span>' : ''}</span>
+    ${isAdmin ? `<button class="btn-icon topnav-fb-btn" onclick="openFeedback()" title="Feedback">💬${fbBadge}</button>` : ''}
     <button class="btn-icon" onclick="doLogout()" title="Logout">⏻</button>
   </div>`;
 }
@@ -539,6 +542,87 @@ function buildLogsView() {
       ${l.notes ? `<div class="text-dim" style="font-size:.75rem">${esc(l.notes)}</div>` : ''}
     </div>`).join('');
   return `<h2 class="mb-md">Audit Log</h2><div class="card">${rows}</div>`;
+}
+
+// ── Feedback ──────────────────────────────────────────────────────
+function openFeedback() {
+  switchFbTab('fb-submit');
+  document.getElementById('fb-text').value = '';
+  document.querySelector('input[name="fb-type"][value="bug"]').checked = true;
+  renderFbInbox();
+  document.getElementById('feedback-overlay').classList.remove('hidden');
+}
+
+function closeFeedback() {
+  document.getElementById('feedback-overlay').classList.add('hidden');
+  render(); // refresh top nav badge count
+}
+
+function switchFbTab(tab) {
+  document.querySelectorAll('#feedback-overlay .tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  document.getElementById('tab-fb-submit').classList.toggle('hidden', tab !== 'fb-submit');
+  document.getElementById('tab-fb-inbox').classList.toggle('hidden', tab !== 'fb-inbox');
+  if (tab === 'fb-inbox') renderFbInbox();
+}
+
+function submitFeedback() {
+  const text = document.getElementById('fb-text').value.trim();
+  if (!text) { showToast('Please enter some text', 'error'); return; }
+  const type = document.querySelector('input[name="fb-type"]:checked')?.value || 'other';
+  Feedback.add(type, text);
+  document.getElementById('fb-text').value = '';
+  renderFbBadge();
+  showToast('Feedback saved', 'success');
+  switchFbTab('fb-inbox');
+}
+
+function renderFbBadge() {
+  const count = Feedback.all().length;
+  const badge = document.getElementById('fb-count-badge');
+  if (badge) badge.textContent = count > 0 ? count : '';
+  const topBadge = document.querySelector('.topnav-fb-badge');
+  if (topBadge) topBadge.textContent = count > 0 ? count : '';
+}
+
+function renderFbInbox() {
+  const list = Feedback.all();
+  renderFbBadge();
+  const container = document.getElementById('fb-inbox-list');
+  if (!container) return;
+  const copyBtn = document.getElementById('fb-copy-btn');
+  if (copyBtn) copyBtn.style.display = list.length ? '' : 'none';
+  if (!list.length) {
+    container.innerHTML = '<div class="empty-state" style="padding:24px 0"><div class="empty-icon">💬</div><div>No feedback yet</div></div>';
+    return;
+  }
+  const typeIcon = { bug: '🐛', feature: '💡', other: '📝' };
+  container.innerHTML = list.map(f => `
+    <div class="fb-item">
+      <div class="fb-item-header">
+        <span class="fb-type-tag fb-type-${f.type}">${typeIcon[f.type] || '📝'} ${f.type}</span>
+        <span class="text-dim" style="font-size:.72rem">${formatTime(f.timestamp)}</span>
+        <button class="btn-icon" style="font-size:.85rem;padding:2px 6px" onclick="deleteFeedback('${f.id}')">🗑</button>
+      </div>
+      <div class="fb-item-text">${esc(f.text).replace(/\n/g, '<br>')}</div>
+    </div>`).join('');
+}
+
+function deleteFeedback(id) {
+  Feedback.delete(id);
+  renderFbInbox();
+  render();
+}
+
+function copyAllFeedback() {
+  const list = Feedback.all();
+  if (!list.length) return;
+  const text = list.map(f =>
+    `[${f.type.toUpperCase()}] ${formatTime(f.timestamp)}\n${f.text}`
+  ).join('\n\n---\n\n');
+  navigator.clipboard.writeText(text).then(
+    () => showToast('Copied to clipboard', 'success'),
+    () => showToast('Copy failed — try long-press', 'error')
+  );
 }
 
 // ── AMA (Ask Me Anything) ──────────────────────────────────────────

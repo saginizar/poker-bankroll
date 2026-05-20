@@ -248,6 +248,17 @@ const Logs = {
   },
 };
 
+// ── Feedback ─────────────────────────────────────────────────────
+const Feedback = {
+  all() { return load('pbm_feedback') || []; },
+  add(type, text) {
+    const list = this.all();
+    list.unshift({ id: uid(), type, text: text.trim(), timestamp: new Date().toISOString() });
+    save('pbm_feedback', list);
+  },
+  delete(id) { save('pbm_feedback', this.all().filter(f => f.id !== id)); },
+};
+
 // ── ApiKey ───────────────────────────────────────────────────────
 const ApiKey = {
   get() { return localStorage.getItem('pbm_api_key') || null; },
