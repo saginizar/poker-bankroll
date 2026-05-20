@@ -4,6 +4,7 @@ const state = {
   role: null,          // 'admin' | 'scorer' | null
   tallyResults: null,
   selectedPlayer: null,
+  amaMessages: [],     // { role: 'user'|'assistant', content: string }[]
 };
 
 // ── Boot ─────────────────────────────────────────────────────────
@@ -97,16 +98,19 @@ function navigate(view) { loadAndRender(view); }
 function render() {
   const app = document.getElementById('app');
   const hasActive = !!Sessions.active();
-  let html = buildTopNav() + '<div class="page">';
+  const isAMA = state.view === 'ama';
+  let html = buildTopNav() + `<div class="page${isAMA ? ' page-ama' : ''}">`;
   switch (state.view) {
     case 'roster':  html += buildRosterView(); break;
     case 'session': html += hasActive ? buildGameBoard() : buildNewSession(); break;
     case 'tally':   html += buildTallyView(); break;
     case 'history': html += buildHistoryView(); break;
     case 'logs':    html += buildLogsView(); break;
+    case 'ama':     html += buildAMAView(); break;
   }
   html += '</div>' + buildBottomNav();
   app.innerHTML = html;
+  if (isAMA) scrollAMAToBottom();
 }
 
 function buildTopNav() {
@@ -120,6 +124,7 @@ function buildTopNav() {
 function buildBottomNav() {
   const v = state.view;
   const hasActive = !!Sessions.active();
+  const isAdmin = state.role === 'admin';
   return `<nav class="bottomnav">
     <a onclick="navigate('roster')" class="${v==='roster'?'active':''}">
       <span class="nav-icon">👥</span>Roster
@@ -133,6 +138,9 @@ function buildBottomNav() {
     <a onclick="navigate('logs')" class="${v==='logs'?'active':''}">
       <span class="nav-icon">📜</span>Audit
     </a>
+    ${isAdmin ? `<a onclick="navigate('ama')" class="${v==='ama'?'active':''}">
+      <span class="nav-icon">🤖</span>Ask AI
+    </a>` : ''}
   </nav>`;
 }
 
@@ -531,6 +539,207 @@ function buildLogsView() {
       ${l.notes ? `<div class="text-dim" style="font-size:.75rem">${esc(l.notes)}</div>` : ''}
     </div>`).join('');
   return `<h2 class="mb-md">Audit Log</h2><div class="card">${rows}</div>`;
+}
+
+// ── AMA (Ask Me Anything) ──────────────────────────────────────────
+const AMA_SYSTEM = `You are a helpful assistant for the Poker Bankroll Manager app. Answer questions about how to use the app clearly and concisely.
+
+Here is the complete app guide:
+
+## Overview
+Poker Bankroll Manager tracks home poker game finances. It runs offline in the browser — all data is stored locally on this device.
+
+## First-time Setup
+1. On first open, you must set an Admin PIN (4 digits) and a Scorer PIN (4 digits).
+2. The Admin PIN gives full access including session deletion, history management, and this AI assistant.
+3. The Scorer PIN gives access to buy-ins and buy-out entry during a game (no destructive actions).
+
+## Player Roster (👥 tab)
+- Add players by typing a name and pressing "Add".
+- Players have a Status (Active / Inactive). Only Active players can join sessions.
+- Each player tracks two balances: Running Balance (current owed/owing across unsettled sessions) and Lifetime Value (cumulative net profit/loss across all settled games).
+- Toggle a player Active/Inactive using the button on their row.
+
+## Starting a Session (🃏 tab)
+1. Tap "New Game" in the bottom nav.
+2. Enter a session title (e.g. "Friday Night Deepstack").
+3. Enter Starting Bank Cash — the cash amount the banker brings to the table.
+4. Select 2–9 players using the checkboxes.
+5. Optionally enter an Expense Credit (₪) per player for shared expenses like snacks. This amount is credited to their settlement.
+6. Tap "Start Session ▶".
+
+## Live Game (🎮 tab)
+- The elliptical table board shows all seated players.
+- Tap a player's seat chip to open the Buy-In / Credit overlay.
+- **Buy-In tab**: Enter an amount or use quick buttons (₪100, ₪200, ₪300). Check "Mark as Debt" if the player is buying in on credit. Tap "Confirm Buy-In".
+- **Credit/Adjust tab**: Enter a positive or negative amount with a reason to manually adjust a player's credit (e.g. correcting a data entry error).
+- The stats bar at the top shows: Chips In Game, Cash in Bank, and Open Debt.
+- Tap "End Game" when the session is over.
+
+## Settlement / Tally (End Game)
+1. After tapping "End Game", the Final Chip Count screen appears.
+2. Enter each player's final chip count and tap "Calculate Settlement ▶".
+3. **Settlement formula**:
+   - Tax = 5% of winnings (applied only to players who made a profit)
+   - Game Net = Final Chips − Total Investment − Tax
+   - Final Settlement = Game Net + Expense Credit + Running Balance at session start
+4. For each player, choose:
+   - **Cash ✓** — they settle in cash now; their Running Balance resets to ₪0.
+   - **Carry →** — the balance rolls forward to the next session.
+
+## Session History (📋 tab)
+- View all past sessions with player outcomes.
+- **Admin only**: "Delete & Rollback" removes a session and fully reverses all player balance changes. Requires a reason and Admin PIN confirmation.
+
+## Audit Log (📜 tab)
+- Shows a timestamped log of every action: session starts/ends, buy-ins, credits, and deletions.
+
+## Ask AI (🤖 tab — Admin only)
+- This chat interface. Ask any question about how to use the app.
+- Your Anthropic API key is stored locally on this device only and never sent anywhere except the official Claude API (api.anthropic.com).
+- To update or clear your API key, tap the key icon at the top of this screen.
+
+## Tips
+- The app works fully offline after the first load.
+- All data is stored in your browser's localStorage. Clearing browser data will erase all records.
+- The banker's phone is the single source of truth — there is no cloud sync.
+- Debt buy-ins show as a red glow on the seat chip during a game.
+- Players marked Inactive are hidden from new session setup but their history is preserved.`;
+
+function buildAMAView() {
+  const hasKey = !!ApiKey.get();
+  const msgs = state.amaMessages;
+
+  const bubbles = msgs.map(m => {
+    const isUser = m.role === 'user';
+    return `<div class="ama-bubble ${isUser ? 'ama-user' : 'ama-bot'}">
+      ${!isUser ? '<div class="ama-bot-label">🤖 AI</div>' : ''}
+      <div class="ama-text">${esc(m.content).replace(/\n/g, '<br>')}</div>
+    </div>`;
+  }).join('');
+
+  const emptyState = !msgs.length ? `
+    <div class="ama-empty">
+      <div style="font-size:2rem;margin-bottom:8px">🤖</div>
+      <div style="font-weight:600;margin-bottom:4px">Ask Me Anything</div>
+      <div class="text-dim">Ask how to use any feature of the app.</div>
+    </div>` : '';
+
+  const keyArea = hasKey
+    ? `<button class="btn-icon ama-key-btn" onclick="amaShowKeyInput()" title="Update API key">🔑</button>`
+    : '';
+
+  return `
+    <div class="ama-header-row">
+      <h2>Ask AI</h2>
+      ${keyArea}
+    </div>
+    ${!hasKey ? `
+    <div class="card ama-setup-card">
+      <div class="text-muted mb-sm">To use the AI assistant, enter your Anthropic API key. It is stored only on this device.</div>
+      <input id="ama-key-input" type="password" placeholder="sk-ant-api03-..." class="input-field mb-sm" autocomplete="off">
+      <button class="btn-primary full-width" onclick="amaSaveKey()">Save API Key</button>
+    </div>` : ''}
+    <div id="ama-messages" class="ama-messages">
+      ${emptyState}${bubbles}
+    </div>
+    ${hasKey ? `
+    <div class="ama-input-bar">
+      <textarea id="ama-input" class="ama-textarea" placeholder="Ask a question…" rows="2"
+        onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();amaSend()}"></textarea>
+      <button class="ama-send-btn" onclick="amaSend()">➤</button>
+    </div>` : ''}`;
+}
+
+function scrollAMAToBottom() {
+  const el = document.getElementById('ama-messages');
+  if (el) el.scrollTop = el.scrollHeight;
+}
+
+function amaSaveKey() {
+  const val = document.getElementById('ama-key-input')?.value?.trim();
+  if (!val || !val.startsWith('sk-ant-')) {
+    showToast('API key must start with sk-ant-', 'error'); return;
+  }
+  ApiKey.save(val);
+  render();
+  showToast('API key saved', 'success');
+}
+
+function amaShowKeyInput() {
+  const newKey = prompt('Enter new Anthropic API key (or leave blank to clear):');
+  if (newKey === null) return;
+  if (!newKey.trim()) { ApiKey.clear(); render(); showToast('API key cleared', 'success'); return; }
+  if (!newKey.trim().startsWith('sk-ant-')) { showToast('Invalid key format', 'error'); return; }
+  ApiKey.save(newKey);
+  showToast('API key updated', 'success');
+}
+
+async function amaSend() {
+  const input = document.getElementById('ama-input');
+  const text = input?.value?.trim();
+  if (!text) return;
+  const key = ApiKey.get();
+  if (!key) { showToast('No API key saved', 'error'); return; }
+
+  input.value = '';
+  input.disabled = true;
+  document.querySelector('.ama-send-btn')?.setAttribute('disabled', true);
+
+  state.amaMessages.push({ role: 'user', content: text });
+  renderAMAMessages(true);
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': key,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true',
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5',
+        max_tokens: 1024,
+        system: AMA_SYSTEM,
+        messages: state.amaMessages.map(m => ({ role: m.role, content: m.content })),
+      }),
+    });
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err?.error?.message || `HTTP ${response.status}`);
+    }
+
+    const data = await response.json();
+    const reply = data.content?.[0]?.text || '(no response)';
+    state.amaMessages.push({ role: 'assistant', content: reply });
+  } catch (e) {
+    state.amaMessages.push({ role: 'assistant', content: `Error: ${e.message}` });
+  }
+
+  renderAMAMessages(false);
+  if (input) { input.disabled = false; input.focus(); }
+  document.querySelector('.ama-send-btn')?.removeAttribute('disabled');
+}
+
+function renderAMAMessages(loading) {
+  const container = document.getElementById('ama-messages');
+  if (!container) return;
+
+  const msgs = state.amaMessages;
+  const bubbles = msgs.map(m => {
+    const isUser = m.role === 'user';
+    return `<div class="ama-bubble ${isUser ? 'ama-user' : 'ama-bot'}">
+      ${!isUser ? '<div class="ama-bot-label">🤖 AI</div>' : ''}
+      <div class="ama-text">${esc(m.content).replace(/\n/g, '<br>')}</div>
+    </div>`;
+  }).join('');
+
+  const loadingDot = loading ? '<div class="ama-bubble ama-bot ama-loading"><div class="ama-bot-label">🤖 AI</div><div class="ama-dots"><span></span><span></span><span></span></div></div>' : '';
+
+  container.innerHTML = bubbles + loadingDot;
+  container.scrollTop = container.scrollHeight;
 }
 
 // ── Helpers ───────────────────────────────────────────────────────

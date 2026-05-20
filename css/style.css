@@ -198,6 +198,30 @@ button:active { transform: scale(.97); }
 /* ── Debt seat highlight ── */
 .seat-chip.has-debt { border-color: var(--red); box-shadow: 0 0 8px rgba(218,54,51,.4); }
 
+/* ── AMA Chat ── */
+.page-ama { display: flex; flex-direction: column; height: calc(100vh - 56px - 62px); padding-bottom: 0; overflow: hidden; }
+.ama-header-row { display: flex; align-items: center; margin-bottom: 10px; }
+.ama-header-row h2 { flex: 1; }
+.ama-key-btn { font-size: 1.1rem; padding: 4px 8px; }
+.ama-setup-card { margin-bottom: 12px; }
+.ama-messages { flex: 1; overflow-y: auto; padding-bottom: 8px; display: flex; flex-direction: column; gap: 10px; }
+.ama-empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; color: var(--text-muted); padding: 40px 20px; }
+.ama-bubble { max-width: 88%; word-break: break-word; }
+.ama-user { align-self: flex-end; background: rgba(56,139,253,.15); border: 1px solid rgba(56,139,253,.3); border-radius: 16px 16px 4px 16px; padding: 10px 14px; }
+.ama-bot { align-self: flex-start; background: var(--surface); border: 1px solid var(--border); border-radius: 16px 16px 16px 4px; padding: 10px 14px; }
+.ama-bot-label { font-size: .65rem; color: var(--text-dim); margin-bottom: 4px; }
+.ama-text { font-size: .9rem; line-height: 1.5; }
+.ama-input-bar { display: flex; gap: 8px; align-items: flex-end; padding-top: 8px; border-top: 1px solid var(--border); }
+.ama-textarea { flex: 1; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text); padding: 10px 12px; font-size: .9rem; resize: none; outline: none; font-family: inherit; line-height: 1.4; }
+.ama-textarea:focus { border-color: var(--blue); }
+.ama-send-btn { background: var(--gold); color: #0d1117; border: none; border-radius: var(--radius-sm); width: 44px; height: 44px; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-weight: 700; }
+.ama-send-btn:disabled { opacity: .4; }
+.ama-loading .ama-dots { display: flex; gap: 5px; align-items: center; height: 20px; }
+.ama-dots span { width: 7px; height: 7px; border-radius: 50%; background: var(--text-muted); animation: amaBounce 1.2s infinite ease-in-out; }
+.ama-dots span:nth-child(2) { animation-delay: .2s; }
+.ama-dots span:nth-child(3) { animation-delay: .4s; }
+@keyframes amaBounce { 0%,80%,100% { transform: scale(.6); opacity:.5 } 40% { transform: scale(1); opacity:1 } }
+
 /* ── Scrollbar ── */
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }

@@ -247,3 +247,10 @@ const Logs = {
     save(KEYS.logs, list);
   },
 };
+
+// ── ApiKey ───────────────────────────────────────────────────────
+const ApiKey = {
+  get() { return localStorage.getItem('pbm_api_key') || null; },
+  save(key) { localStorage.setItem('pbm_api_key', key.trim()); },
+  clear() { localStorage.removeItem('pbm_api_key'); },
+};
